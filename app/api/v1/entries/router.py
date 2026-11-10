@@ -16,11 +16,13 @@ from app.api.v1.entries.schemas import (
     TagMatch,
 )
 from app.core.db import get_db
+from app.core.security import require_admin
 from app.models import Difficulty
 
 router = APIRouter(prefix="/entries", tags=["entries"])
 
 DB = Annotated[Session, Depends(get_db)]
+Admin = Depends(require_admin)
 
 
 class EntryFilters:
@@ -93,7 +95,13 @@ def get_entry(slug: str, db: DB):
         raise _not_found(slug)
 
 
-@router.post("", response_model=EntryRead, status_code=status.HTTP_201_CREATED, summary="Crear una entry")
+@router.post(
+    "",
+    response_model=EntryRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear una entry",
+    dependencies=[Admin],
+)
 def create_entry(data: EntryCreate, db: DB):
     try:
         return repository.create_entry(db, data)
@@ -102,7 +110,7 @@ def create_entry(data: EntryCreate, db: DB):
         raise _persistence_error()
 
 
-@router.put("/{slug}", response_model=EntryRead, summary="Editar una entry")
+@router.put("/{slug}", response_model=EntryRead, summary="Editar una entry", dependencies=[Admin])
 def update_entry(slug: str, data: EntryUpdate, db: DB):
     try:
         return repository.update_entry(db, slug, data)
@@ -113,7 +121,9 @@ def update_entry(slug: str, data: EntryUpdate, db: DB):
         raise _persistence_error()
 
 
-@router.delete("/{slug}", status_code=status.HTTP_204_NO_CONTENT, summary="Borrar una entry")
+@router.delete(
+    "/{slug}", status_code=status.HTTP_204_NO_CONTENT, summary="Borrar una entry", dependencies=[Admin]
+)
 def delete_entry(slug: str, db: DB):
     try:
         repository.delete_entry(db, slug)

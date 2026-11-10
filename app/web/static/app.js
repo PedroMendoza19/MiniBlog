@@ -23,6 +23,53 @@
     window.location.href = url;
   }
 
+  // ---------- Clave de admin ----------
+  // Si el server tiene ADMIN_KEY, las escrituras devuelven 401 sin la clave:
+  // la pedimos en un diálogo, la validamos, la guardamos y reintentamos.
+  const KEY_STORAGE = "admin-key";
+  const getKey = () => { try { return localStorage.getItem(KEY_STORAGE) || ""; } catch (e) { return ""; } };
+  const setKey = (k) => { try { k ? localStorage.setItem(KEY_STORAGE, k) : localStorage.removeItem(KEY_STORAGE); } catch (e) {} };
+
+  function askKey() {
+    const dialog = $("#admin-dialog");
+    const input = $("#admin-key");
+    const error = $("#admin-error");
+    return new Promise((resolve) => {
+      error.textContent = "";
+      input.value = "";
+      const finish = (key) => { cleanup(); dialog.close(); resolve(key); };
+      const onSubmit = async (e) => {
+        e.preventDefault();
+        const key = input.value.trim();
+        if (!key) return;
+        const res = await fetch("/api/v1/admin/check", { headers: { "X-Admin-Key": key } });
+        if (res.ok) { setKey(key); finish(key); }
+        else { error.textContent = "Clave incorrecta"; input.select(); }
+      };
+      const onCancel = () => finish(null);
+      const cleanup = () => {
+        $("#admin-form").removeEventListener("submit", onSubmit);
+        $("#admin-cancel").removeEventListener("click", onCancel);
+        dialog.removeEventListener("cancel", onCancel);
+      };
+      $("#admin-form").addEventListener("submit", onSubmit);
+      $("#admin-cancel").addEventListener("click", onCancel);
+      dialog.addEventListener("cancel", onCancel);
+      dialog.showModal();
+      input.focus();
+    });
+  }
+
+  async function apiFetch(url, options = {}) {
+    const send = () => fetch(url, { ...options, headers: { ...(options.headers || {}), "X-Admin-Key": getKey() } });
+    let res = await send();
+    if (res.status === 401) {
+      setKey("");
+      if (await askKey()) res = await send();
+    }
+    return res;
+  }
+
   // ---------- Tema claro / oscuro ----------
   $("#theme-toggle")?.addEventListener("click", () => {
     const root = document.documentElement;
@@ -76,9 +123,9 @@
     btn.addEventListener("click", async () => {
       if (!confirm("¿Borrar esta entry? No se puede deshacer.")) return;
       btn.disabled = true;
-      const res = await fetch(`/api/v1/entries/${encodeURIComponent(btn.dataset.delete)}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/v1/entries/${encodeURIComponent(btn.dataset.delete)}`, { method: "DELETE" });
       if (res.ok) redirectWithFlash("/", "Entry borrada");
-      else { btn.disabled = false; toast("No se pudo borrar", true); }
+      else { btn.disabled = false; toast(res.status === 401 ? "Necesitás la clave de admin" : "No se pudo borrar", true); }
     });
   });
 
@@ -182,7 +229,7 @@
     const submit = $('button[type="submit"]', form);
     submit.disabled = true;
     try {
-      const res = await fetch(form.dataset.action, {
+      const res = await apiFetch(form.dataset.action, {
         method: form.dataset.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

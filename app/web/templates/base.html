@@ -56,6 +56,24 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <dialog class="dialog card" id="admin-dialog" aria-labelledby="admin-dialog-title">
+    <form method="dialog" id="admin-form">
+      <div class="dialog__icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      </div>
+      <h2 id="admin-dialog-title">Clave de admin</h2>
+      <p>Para crear, editar o borrar entries necesitás la clave. Se guarda en este navegador.</p>
+      <div class="field">
+        <input type="password" id="admin-key" autocomplete="current-password" placeholder="Tu clave" required>
+        <p class="field__error" id="admin-error"></p>
+      </div>
+      <div class="form-actions">
+        <button class="btn" type="button" value="cancel" id="admin-cancel">Cancelar</button>
+        <button class="btn btn--primary" type="submit" value="ok">Entrar</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="{{ url_for('static', path='app.js') }}"></script>
 </body>
