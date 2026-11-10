@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ entry.title }} — til/{% endblock %}
+
+{% block content %}
+<article class="post">
+  <a class="back" href="/">← Volver</a>
+
+  <header class="post__header">
+    <div class="post__meta">
+      <time datetime="{{ entry.learned_on.isoformat() }}">{{ entry.learned_on|fecha }}</time>
+      {% if entry.language %}<span class="pill pill--lang">{{ entry.language }}</span>{% endif %}
+      <span class="pill pill--{{ entry.difficulty.value }}"><i class="dot"></i>{{ difficulty_labels[entry.difficulty.value] }}</span>
+    </div>
+    <h1 class="post__title">{{ entry.title }}</h1>
+    {% if entry.tags %}
+    <div class="post__tags">
+      {% for t in entry.tags|sort(attribute='name') %}<a class="tag" href="{{ query_url({}, tag=t.name) }}">#{{ t.name }}</a>{% endfor %}
+    </div>
+    {% endif %}
+  </header>
+
+  <div class="prose">{{ entry.content|render_text }}</div>
+
+  {% if entry.code_snippet %}
+  <figure class="code">
+    <figcaption class="code__bar">
+      <span class="code__dots"><i></i><i></i><i></i></span>
+      <span class="code__lang">{{ entry.language or "code" }}</span>
+      <button class="code__copy" type="button" data-copy>Copiar</button>
+    </figcaption>
+    <pre><code class="{% if entry.language %}language-{{ entry.language }}{% endif %}">{{ entry.code_snippet }}</code></pre>
+  </figure>
+  {% endif %}
+
+  {% if entry.reference_url %}
+  <a class="ref card" href="{{ entry.reference_url }}" target="_blank" rel="noopener noreferrer">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+    <span>
+      <small>Referencia</small>
+      <span class="ref__url">{{ entry.reference_url }}</span>
+    </span>
+  </a>
+  {% endif %}
+
+  <footer class="post__footer">
+    <span class="post__updated">
+      {% if entry.updated_at.replace(microsecond=0) != entry.created_at.replace(microsecond=0) %}Editada el {{ entry.updated_at.date()|fecha }}{% endif %}
+    </span>
+    <div class="post__actions">
+      <a class="btn" href="/e/{{ entry.slug }}/edit">Editar</a>
+      <button class="btn btn--danger" type="button" data-delete="{{ entry.slug }}">Borrar</button>
+    </div>
+  </footer>
+</article>
+{% endblock %}

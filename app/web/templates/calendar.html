@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ month_name }} {{ year }} — til/{% endblock %}
+
+{% block content %}
+<section class="cal">
+  <a class="back" href="/">← Volver al inicio</a>
+  <header class="cal__header">
+    <div>
+      <p class="eyebrow">Calendario</p>
+      <h1 class="cal__title">{{ month_name }} <span>{{ year }}</span></h1>
+      <p class="cal__summary">
+        {% if month_total %}
+          <strong>{{ month_total }}</strong> {{ "entry" if month_total == 1 else "entries" }}
+          en <strong>{{ month_active_days }}</strong> {{ "día" if month_active_days == 1 else "días" }}
+        {% else %}
+          Sin entries este mes
+        {% endif %}
+      </p>
+    </div>
+    <nav class="cal__nav" aria-label="Cambiar de mes">
+      <a class="icon-btn icon-btn--bordered" href="{{ prev_url }}" aria-label="Mes anterior" data-hotkey="ArrowLeft">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </a>
+      {% if not is_current %}<a class="btn" href="/calendar">Hoy</a>{% endif %}
+      <a class="icon-btn icon-btn--bordered" href="{{ next_url }}" aria-label="Mes siguiente" data-hotkey="ArrowRight">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+    </nav>
+  </header>
+
+  {# ---- Grilla (desktop / tablet) ---- #}
+  <div class="cal__grid card" role="grid">
+    {% for wd in weekdays %}<div class="cal__weekday" role="columnheader">{{ wd }}</div>{% endfor %}
+    {% for week in weeks %}
+      {% for day in week %}
+        {% set items = by_day.get(day, []) %}
+        {% set outside = day.month != month %}
+        <div class="cal__day{% if outside %} is-outside{% endif %}{% if day == today %} is-today{% endif %}{% if items %} has-entries{% endif %}{% if day > today %} is-future{% endif %}"
+             role="gridcell" aria-label="{{ day|fecha }}: {{ items|length }} entries">
+          <div class="cal__day-head">
+            <span class="cal__num">{{ day.day }}</span>
+            {% if items|length > 1 %}<span class="cal__count">{{ items|length }}</span>{% endif %}
+          </div>
+          {% for e in items[:3] %}
+            <a class="cal__entry cal__entry--{{ e.difficulty.value }}" href="/e/{{ e.slug }}" title="{{ e.title }}">
+              <i class="dot"></i><span>{{ e.title }}</span>
+            </a>
+          {% endfor %}
+          {% if items|length > 3 %}
+            <span class="cal__more" title="{{ items[3:]|map(attribute='title')|join(' · ') }}">+{{ items|length - 3 }} más</span>
+          {% endif %}
+          {% if day == today and not items %}
+            <a class="cal__add" href="/new" aria-label="Escribir la entry de hoy">+ ¿Qué aprendiste hoy?</a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  {# ---- Agenda (celular) ---- #}
+  <ol class="cal__agenda">
+    {% for week in weeks %}{% for day in week if day.month == month and by_day.get(day) %}
+      <li class="agenda-day">
+        <time class="agenda-day__date{% if day == today %} is-today{% endif %}" datetime="{{ day.isoformat() }}">
+          <span class="agenda-day__num">{{ day.day }}</span>
+          <span class="agenda-day__wd">{{ weekdays[day.weekday()] }}</span>
+        </time>
+        <div class="agenda-day__items">
+          {% for e in by_day[day] %}
+            <a class="cal__entry cal__entry--{{ e.difficulty.value }}" href="/e/{{ e.slug }}">
+              <i class="dot"></i><span>{{ e.title }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </li>
+    {% endfor %}{% endfor %}
+    {% if not month_total %}
+      <li class="empty card">
+        <p>No hay entries en {{ month_name|lower }}.</p>
+        {% if is_current %}<a class="btn btn--primary" href="/new">Escribir una</a>{% endif %}
+      </li>
+    {% endif %}
+  </ol>
+
+  <p class="cal__legend">
+    <span class="cal__legend-item"><i class="dot dot--beginner"></i>Básico</span>
+    <span class="cal__legend-item"><i class="dot dot--intermediate"></i>Intermedio</span>
+    <span class="cal__legend-item"><i class="dot dot--advanced"></i>Avanzado</span>
+    <span class="cal__hint">Usá ← → para cambiar de mes</span>
+  </p>
+</section>
+{% endblock %}

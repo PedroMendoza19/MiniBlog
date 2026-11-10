@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero__copy">
+    <p class="eyebrow">Dev Log · Today I Learned</p>
+    <h1 class="hero__title">Lo que fui aprendiendo,<br><em>un día a la vez.</em></h1>
+    <p class="hero__lead">Notas cortas sobre código: un concepto, un truco, un error que no quiero volver a cometer.</p>
+  </div>
+
+  <aside class="stats card">
+    <div class="stats__row">
+      <div class="stat stat--fire {% if streak.current_streak %}is-on{% endif %}">
+        <span class="stat__value">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2s5 4.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 1-3.5S9 11 11 11c0-4 1-9 1-9z"/></svg>
+          {{ streak.current_streak }}
+        </span>
+        <span class="stat__label">{{ "día" if streak.current_streak == 1 else "días" }} de racha</span>
+      </div>
+      <div class="stat">
+        <span class="stat__value">{{ streak.longest_streak }}</span>
+        <span class="stat__label">récord</span>
+      </div>
+      <div class="stat">
+        <span class="stat__value">{{ streak.total_entries }}</span>
+        <span class="stat__label">entries</span>
+      </div>
+    </div>
+    <div class="heatmap" role="img" aria-label="Actividad de las últimas 20 semanas">
+      {% for day in activity %}
+        <span class="heatmap__cell l{{ day.level }}" title="{{ day.date|fecha }} · {{ day.count }} {{ 'entry' if day.count == 1 else 'entries' }}"></span>
+      {% endfor %}
+    </div>
+    <div class="heatmap__legend">
+      <a class="heatmap__link" href="/calendar">Ver calendario →</a>
+      <span class="heatmap__scale">menos
+        <i class="heatmap__cell l0"></i><i class="heatmap__cell l1"></i><i class="heatmap__cell l2"></i><i class="heatmap__cell l3"></i><i class="heatmap__cell l4"></i>
+        más</span>
+    </div>
+  </aside>
+</section>
+
+<section class="explore">
+  <form class="search" method="get" action="/">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" name="q" id="search" value="{{ filters.q or '' }}" placeholder="Buscar en títulos y contenido…" aria-label="Buscar">
+    {% for key in ["tag", "language", "difficulty"] if filters[key] %}
+      <input type="hidden" name="{{ key }}" value="{{ filters[key] }}">
+    {% endfor %}
+    <kbd>/</kbd>
+  </form>
+
+  <div class="facets">
+    {% if languages %}
+    <div class="facet">
+      <span class="facet__label">Lenguaje</span>
+      <div class="facet__chips">
+      {% for lang in languages %}
+        <a class="chip {% if filters.language == lang.name %}is-active{% endif %}"
+           href="{{ toggle_url(filters, 'language', lang.name) }}">{{ lang.name }}<small>{{ lang.count }}</small></a>
+      {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="facet">
+      <span class="facet__label">Nivel</span>
+      <div class="facet__chips">
+      {% for key, label in difficulty_labels.items() %}
+        <a class="chip chip--{{ key }} {% if filters.difficulty == key %}is-active{% endif %}"
+           href="{{ toggle_url(filters, 'difficulty', key) }}"><i class="dot"></i>{{ label }}</a>
+      {% endfor %}
+      </div>
+    </div>
+
+    {% if tags %}
+    <div class="facet">
+      <span class="facet__label">Tags</span>
+      <div class="facet__chips">
+      {% for t in tags %}
+        <a class="chip chip--tag {% if filters.tag == t.name %}is-active{% endif %}"
+           href="{{ toggle_url(filters, 'tag', t.name) }}">#{{ t.name }}</a>
+      {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if filters %}
+  <p class="results-info">
+    <strong>{{ total }}</strong> {{ "resultado" if total == 1 else "resultados" }}
+    <a href="/" class="link-clear">Limpiar filtros ×</a>
+  </p>
+  {% endif %}
+</section>
+
+<section class="feed">
+  {% for entry in entries %}
+    <article class="entry-card">
+      <time class="entry-card__date" datetime="{{ entry.learned_on.isoformat() }}">
+        <span class="entry-card__day">{{ entry.learned_on.day }}</span>
+        <span class="entry-card__month">{{ months[entry.learned_on.month - 1] }}</span>
+        <span class="entry-card__year">{{ entry.learned_on.year }}</span>
+      </time>
+      <div class="entry-card__body">
+        <h2 class="entry-card__title"><a href="/e/{{ entry.slug }}">{{ entry.title }}</a></h2>
+        <p class="entry-card__excerpt">{{ entry.content|excerpt }}</p>
+        <div class="entry-card__meta">
+          {% if entry.language %}<span class="pill pill--lang">{{ entry.language }}</span>{% endif %}
+          <span class="pill pill--{{ entry.difficulty.value }}"><i class="dot"></i>{{ difficulty_labels[entry.difficulty.value] }}</span>
+          {% if entry.code_snippet %}<span class="pill pill--code" title="Incluye código">&lt;/&gt;</span>{% endif %}
+          {% for t in entry.tags|sort(attribute='name') %}<a class="tag" href="{{ query_url({}, tag=t.name) }}">#{{ t.name }}</a>{% endfor %}
+        </div>
+      </div>
+    </article>
+  {% else %}
+    <div class="empty card">
+      {% if filters %}
+        <h3>Nada por acá</h3>
+        <p>Ninguna entry coincide con esos filtros.</p>
+        <a class="btn" href="/">Ver todas</a>
+      {% else %}
+        <h3>Tu dev log está vacío</h3>
+        <p>¿Qué aprendiste hoy? Hasta lo más chico cuenta.</p>
+        <a class="btn btn--primary" href="/new">Escribir la primera entry</a>
+      {% endif %}
+    </div>
+  {% endfor %}
+</section>
+
+{% if pages > 1 %}
+<nav class="pager" aria-label="Paginación">
+  {% if page > 1 %}<a class="btn" href="{{ query_url(filters, page=page - 1) }}">← Más nuevas</a>{% else %}<span></span>{% endif %}
+  <span class="pager__info">Página {{ page }} de {{ pages }}</span>
+  {% if page < pages %}<a class="btn" href="{{ query_url(filters, page=page + 1) }}">Más viejas →</a>{% else %}<span></span>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}
