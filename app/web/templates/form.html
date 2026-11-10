@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ "Editar entry" if entry else "Nueva entry" }} — til/{% endblock %}
+
+{% block content %}
+<div class="form-page">
+  <a class="back" href="{{ '/e/' ~ entry.slug if entry else '/' }}">← Volver</a>
+  <h1 class="form-page__title">{{ "Editar entry" if entry else "¿Qué aprendiste hoy?" }}</h1>
+
+  <form class="entry-form card" id="entry-form" novalidate
+        data-method="{{ 'PUT' if entry else 'POST' }}"
+        data-action="/api/v1/entries{{ '/' ~ entry.slug if entry else '' }}">
+
+    <div class="field">
+      <label for="title">Título</label>
+      <input id="title" name="title" required minlength="3" maxlength="120" autocomplete="off"
+             placeholder="Ej: Los walrus operators existen" value="{{ entry.title if entry else '' }}">
+      <p class="field__error" data-error-for="title"></p>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="learned_on">Fecha</label>
+        <input id="learned_on" name="learned_on" type="date" max="{{ today.isoformat() }}"
+               value="{{ (entry.learned_on if entry else today).isoformat() }}">
+        <p class="field__error" data-error-for="learned_on"></p>
+      </div>
+      <div class="field">
+        <label for="language">Lenguaje <span class="optional">opcional</span></label>
+        <input id="language" name="language" list="languages-list" maxlength="30" autocomplete="off"
+               placeholder="python, sql, rust…" value="{{ entry.language or '' if entry else '' }}">
+        <datalist id="languages-list">
+          {% for l in languages %}<option value="{{ l.name }}">{% endfor %}
+        </datalist>
+        <p class="field__error" data-error-for="language"></p>
+      </div>
+    </div>
+
+    <fieldset class="field">
+      <legend>Nivel</legend>
+      <div class="segmented">
+        {% set current = entry.difficulty.value if entry else "beginner" %}
+        {% for key, label in difficulty_labels.items() %}
+          <label class="segmented__opt segmented__opt--{{ key }}">
+            <input type="radio" name="difficulty" value="{{ key }}" {% if key == current %}checked{% endif %}>
+            <span><i class="dot"></i>{{ label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="field">
+      <label for="content">Qué aprendiste</label>
+      <textarea id="content" name="content" rows="6" required
+                placeholder="Explicalo como si se lo contaras a vos mismo dentro de un año. Podés usar `código` y **negrita**.">{{ entry.content if entry else '' }}</textarea>
+      <p class="field__error" data-error-for="content"></p>
+    </div>
+
+    <div class="field">
+      <label for="code_snippet">Snippet <span class="optional">opcional</span></label>
+      <textarea id="code_snippet" name="code_snippet" rows="6" class="mono" spellcheck="false"
+                placeholder="if (n := len(items)) > 10:&#10;    print(f&quot;{n} items&quot;)">{{ entry.code_snippet or '' if entry else '' }}</textarea>
+      <p class="field__error" data-error-for="code_snippet"></p>
+    </div>
+
+    <div class="field">
+      <label for="tags-input">Tags <span class="optional">Enter o coma para agregar</span></label>
+      <div class="tag-input" id="tag-input">
+        <input id="tags-input" list="tags-list" autocomplete="off" placeholder="python, async…">
+        <datalist id="tags-list">
+          {% for t in all_tags %}<option value="{{ t.name }}">{% endfor %}
+        </datalist>
+      </div>
+      <input type="hidden" name="tags" id="tags-hidden"
+             value="{{ entry.tags|map(attribute='name')|sort|join(',') if entry else '' }}">
+      <p class="field__error" data-error-for="tags"></p>
+    </div>
+
+    <div class="field">
+      <label for="reference_url">Link de referencia <span class="optional">opcional</span></label>
+      <input id="reference_url" name="reference_url" type="url" placeholder="https://docs.python.org/…"
+             value="{{ entry.reference_url or '' if entry else '' }}">
+      <p class="field__error" data-error-for="reference_url"></p>
+    </div>
+
+    <div class="form-actions">
+      <a class="btn" href="{{ '/e/' ~ entry.slug if entry else '/' }}">Cancelar</a>
+      <button class="btn btn--primary" type="submit">{{ "Guardar cambios" if entry else "Publicar" }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
