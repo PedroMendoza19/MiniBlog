@@ -43,7 +43,7 @@ tests/                       # pytest
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 copy .env.example .env          # opcional
 
 python -m scripts.seed          # opcional: carga 10 entries de ejemplo
@@ -56,8 +56,34 @@ fastapi dev app/main.py
 Tests:
 
 ```powershell
-pytest
+pytest                                                              # SQLite en memoria
+$env:TEST_DATABASE_URL="postgresql://user@localhost/devlog_test"; pytest   # contra Postgres
 ```
+
+## Deploy (Render + Neon)
+
+La app se publica en [Render](https://render.com) (plan free) y guarda los datos en Postgres de [Neon](https://neon.tech) (free, no vence). La configuración está en `render.yaml`.
+
+1. **Neon:** crear un proyecto y copiar la *connection string* (`postgresql://...?sslmode=require`).
+2. **Render:** *New → Blueprint*, elegir este repo. Pide dos variables:
+   - `DATABASE_URL`: la connection string de Neon
+   - `ADMIN_KEY`: una clave larga inventada por vos (es la que pide el front para crear/editar/borrar)
+3. Cada push a `main` redeploya solo.
+
+Para cargar los datos de ejemplo en Neon (opcional), desde tu máquina:
+
+```powershell
+$env:DATABASE_URL="postgresql://...neon..."; python -m scripts.seed
+```
+
+> El plan free de Render apaga el servicio después de ~15 min sin visitas; la primera visita después tarda ~1 minuto en despertar. Los datos no se pierden porque están en Neon.
+
+### Clave de admin
+
+Mientras no haya usuarios, la escritura se protege con `ADMIN_KEY`:
+- Leer (home, entries, calendario, `GET` de la API) es público.
+- `POST`/`PUT`/`DELETE` piden el header `X-Admin-Key`. El front la pide en un diálogo la primera vez y la recuerda en el navegador.
+- Si `ADMIN_KEY` está vacía (desarrollo local), la escritura queda abierta.
 
 ## API
 
@@ -109,8 +135,7 @@ Ejemplo de entry:
 
 ## Próximos pasos
 
-- [ ] Autenticación JWT: lectura pública, escritura solo con login
+- [ ] Gestión de usuarios + JWT (reemplaza la clave de admin)
 - [ ] Migraciones con Alembic, en lugar de `create_all`
-- [ ] PostgreSQL + Docker
 - [ ] Markdown completo en el contenido
-- [ ] Deploy
+- [x] PostgreSQL (Neon) + deploy en Render

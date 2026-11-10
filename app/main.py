@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app import models  # noqa: F401  (registra los modelos en Base.metadata)
@@ -9,6 +9,7 @@ from app.api.v1.entries.router import router as entries_router
 from app.api.v1.tags.router import router as tags_router
 from app.core.config import settings
 from app.core.db import Base, engine
+from app.core.security import require_admin
 from app.web.router import router as web_router
 
 
@@ -35,3 +36,9 @@ app.mount("/static", StaticFiles(directory=Path(__file__).parent / "web" / "stat
 @app.get("/health", tags=["meta"])
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/v1/admin/check", tags=["meta"], dependencies=[Depends(require_admin)])
+def admin_check():
+    """Devuelve 200 si la clave del header X-Admin-Key es válida (o si no hay clave configurada)."""
+    return {"ok": True, "protected": settings.admin_key is not None}

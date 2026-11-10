@@ -1,0 +1,22 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: devlog
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      # Para que "hoy" y la racha usen la hora de Argentina y no UTC.
+      - key: TZ
+        value: America/Argentina/Buenos_Aires
+      # Se cargan a mano en el dashboard de Render (no se guardan en el repo).
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_KEY
+        sync: false

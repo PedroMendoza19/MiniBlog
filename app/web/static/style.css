@@ -480,6 +480,17 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
   .cal__header { align-items: flex-start; flex-direction: column; }
 }
 
+/* ============ Diálogo de clave ============ */
+.dialog { width: min(400px, calc(100vw - 32px)); padding: 28px; color: var(--ink); }
+.dialog::backdrop { background: rgb(10 12 11 / .45); backdrop-filter: blur(3px); }
+.dialog h2 { margin: 12px 0 6px; font: 650 22px/1.2 var(--font-serif); }
+.dialog p { margin: 0 0 16px; color: var(--ink-2); font-size: 14px; }
+.dialog .field__error { margin-top: 6px; }
+.dialog .form-actions { padding-top: 16px; }
+.dialog__icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
+.dialog input { width: 100%; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--bg); color: var(--ink); font: 15px var(--font-sans); padding: 10px 12px; }
+.dialog input:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+
 /* ============ Toast / footer ============ */
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px);
